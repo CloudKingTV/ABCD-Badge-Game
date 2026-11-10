@@ -52,6 +52,12 @@ Placeholders to replace before an event:
 Keys: SELECT swap, UP your pack, DOWN help, LEFT/RIGHT change what the
 creature wears, CANCEL back or exit.
 
+To get a feel for it without a badge, `python3 tools/web/build.py preview.html`
+makes one page that runs the same files in a browser, with two badges that can
+swap with each other. It uses a browser Lua and a drawn screen, and doesn't
+enforce the badge's memory limit, so it shows how the game plays, not whether
+it runs on a badge.
+
 ## How it's put together
 
 A badge app gets 48 KB of memory, code included, so only what must always be

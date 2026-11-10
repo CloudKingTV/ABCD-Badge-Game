@@ -1,0 +1,770 @@
+<title>Kinlings Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a short brief, then two badges side by side (stacked on a phone),
+     each a dark device with its screen, LEDs and six buttons. */
+  :root {
+    --bg: #f3f2f7; --panel: #ffffff; --ink: #1b1a24; --dim: #5f5d70; --line: #dcdae6;
+    --accent: #6b2fd6; --on-accent: #ffffff; --go: #0a7d52;
+    --device: #1d1c26; --device-edge: #33313f; --device-ink: #c9c7d6; --key: #2b2a37; --key-edge: #4a4859;
+    --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+    --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111017; --panel: #1a1922; --ink: #efeef6; --dim: #a09eb2; --line: #2e2c3a;
+      --accent: #b79bff; --on-accent: #17122b; --go: #3ddba0;
+      --device: #23222d; --device-edge: #3d3b4b; --device-ink: #c9c7d6; --key: #302f3d; --key-edge: #55536a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111017; --panel: #1a1922; --ink: #efeef6; --dim: #a09eb2; --line: #2e2c3a;
+    --accent: #b79bff; --on-accent: #17122b; --go: #3ddba0;
+    --device: #23222d; --device-edge: #3d3b4b; --device-ink: #c9c7d6; --key: #302f3d; --key-edge: #55536a;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+    padding-block: 20px 40px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-family: var(--display); font-weight: 700; font-size: 28px; line-height: 1.15; margin: 0; text-wrap: balance; }
+  .lede { margin: 6px 0 0; color: var(--dim); max-width: 62ch; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tools button {
+    font: 500 14px var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 8px 14px; cursor: pointer;
+  }
+  .tools button:hover { border-color: var(--accent); }
+  .tools label { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; color: var(--dim); padding: 8px 4px; }
+  button:focus-visible, input:focus-visible, .badge:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+  .badge {
+    background: var(--device); border: 1px solid var(--device-edge); border-radius: 18px; padding: 12px;
+    display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  }
+  .who { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; color: var(--device-ink); }
+  .who b { font-family: var(--display); font-weight: 500; font-size: 15px; color: #fff; }
+  .who span { font: 12px var(--mono); }
+  .leds { display: flex; justify-content: space-between; padding: 0 10%; }
+  .leds i { width: 10px; height: 10px; border-radius: 50%; background: #3a3947; border: 1px solid #55536a; }
+  canvas { width: 100%; max-width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 6px; background: #000; image-rendering: pixelated; }
+  .pad { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .dpad { display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 40px); gap: 4px; }
+  .pad button {
+    font: 500 12px var(--mono); color: #fff; background: var(--key); border: 1px solid var(--key-edge);
+    border-radius: 10px; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  }
+  .pad button:active { background: var(--key-edge); }
+  .dpad .up { grid-area: 1 / 2; } .dpad .left { grid-area: 2 / 1; } .dpad .right { grid-area: 2 / 3; } .dpad .down { grid-area: 3 / 2; }
+  .ab { display: flex; flex-direction: column; gap: 8px; }
+  .ab button { min-width: 104px; height: 44px; }
+  .ab .select { background: #14F195; border-color: #14F195; color: #0b241a; font-weight: 500; }
+  .steps { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+  .steps h2 { font-family: var(--display); font-size: 17px; margin: 0 0 8px; }
+  .steps ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 68ch; }
+  .steps kbd { font: 500 12px var(--mono); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; white-space: nowrap; }
+  .note { color: var(--dim); font-size: 13px; max-width: 70ch; margin: 0; }
+  #log { font: 12px var(--mono); color: var(--dim); white-space: pre-wrap; margin: 0; min-height: 1em; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Kinlings preview</h1>
+    <p class="lede">Two badges running the game. Yours is on the left (or top). The other belongs to a friend standing next to you, so you can play both sides of a swap.</p>
+  </header>
+
+  <div class="tools">
+    <button id="walk" type="button">Someone walks past</button>
+    <button id="skip2" type="button">Skip 2 minutes</button>
+    <button id="skip4" type="button">Skip 4 hours</button>
+    <button id="reset" type="button">Start over</button>
+    <label for="member"><input id="member" type="checkbox" checked> The friend is an ABCD member</label>
+  </div>
+
+  <div class="stage" id="stage"></div>
+  <pre id="log" aria-live="polite"></pre>
+
+  <section class="steps">
+    <h2>A quick tour</h2>
+    <ol>
+      <li>Press <kbd>SELECT</kbd> five times on each badge to hatch its egg.</li>
+      <li>Tap <b>Someone walks past</b> a few times. Each passer-by is a badge without the app; within a few seconds both creatures forage a snack from them.</li>
+      <li>On your badge press <kbd>SELECT</kbd>, pick <b>@abcd_friend</b> and press <kbd>SELECT</kbd> again. On the friend's badge press <kbd>SELECT</kbd> to say yes.</li>
+      <li>Your creature has now been fed by one person, the friend is in your pack, and because they are an ABCD member it is wearing their crown. <kbd>LEFT</kbd> and <kbd>RIGHT</kbd> take it off and on.</li>
+      <li>Swap again and nothing grows: only a new person's first snack counts. Untick the box above and start over to see a swap with a non-member.</li>
+      <li><b>Skip 4 hours</b> puts an unfed creature to sleep. <kbd>UP</kbd> shows your pack, <kbd>DOWN</kbd> the help screen, <kbd>CANCEL</kbd> goes back.</li>
+    </ol>
+  </section>
+
+  <p class="note">This page runs the game's real code, but on a stand-in for the badge: a browser Lua and a screen drawn to look like the badge's. Fonts and exact positions differ, and the badge's memory limit is not enforced here. On a keyboard, the arrow keys, Enter and Escape drive your badge.</p>
+</div>
+
+<script type="application/json" id="files">__FILES__</script>
+
+<script type="text/plain" id="prelude">
+-- The badge's app API (Solana OS docs/LUA_API.md), as much of it as the game
+-- uses, on top of the page's host object.
+local js = require "js"
+local H = __host
+__host = nil
+local load_, floor = load, math.floor
+local function int(x) return math.tointeger(x) or floor(x) end
+
+local THEME = {text = 0xFFFFFF, dim = 0x8E8C9E, bg = 0x000000, panel = 0x111116, border = 0x2A2935,
+  purple = 0x9945FF, green = 0x14F195, pink = 0xEB54BC, lpurple = 0xB6B0FF, blue = 0x64A8F2,
+  aqua = 0x80ECFF, lime = 0xACFF9B, yellow = 0xE8F180, orange = 0xFF754A}
+local function col(v)
+  if math.type(v) == "integer" then return v & 0xFFFFFF end
+  if type(v) == "string" and THEME[v] then return THEME[v] end
+  error("colour must be a theme name or 0xRRGGBB, not '" .. tostring(v) .. "'", 3)
+end
+local function px(v)
+  if v == nil or v == false then return -1 end
+  return col(v)
+end
+
+local function ser(v)
+  local t = type(v)
+  if t == "table" then
+    local out = {}
+    for k, x in pairs(v) do out[#out + 1] = "[" .. ser(k) .. "]=" .. ser(x) end
+    return "{" .. table.concat(out, ",") .. "}"
+  elseif t == "string" then
+    return string.format("%q", v)
+  elseif t == "number" then
+    return math.type(v) == "integer" and string.format("%d", v) or string.format("%.14g", v)
+  end
+  return tostring(v)
+end
+
+-- ui
+local lists, confirm_cb = {}, nil
+local common = {}
+local function id_of(o)
+  if o.__gone then error("this object was removed", 3) end
+  return o.__id
+end
+function common.pos(o, x, y) local id = id_of(o) H:set(id, "x", x) H:set(id, "y", y) end
+function common.show(o, b) H:set(id_of(o), "hidden", not (b == nil or b)) end
+function common.remove(o)
+  if not o.__gone then H:del(o.__id) lists[o.__id] = nil o.__gone = true end
+end
+local kinds = {}
+local function kind(name, methods)
+  for k, v in pairs(common) do methods[k] = methods[k] or v end
+  kinds[name] = {__index = methods}
+end
+local function new(name, fields)
+  local id = int(H:newobj(name))
+  for k, v in pairs(fields) do H:set(id, k, v) end
+  return setmetatable({__id = id}, kinds[name])
+end
+
+kind("label", {
+  text = function(o, t) H:set(id_of(o), "text", tostring(t)) end,
+  color = function(o, c) H:set(id_of(o), "color", col(c)) end,
+})
+kind("rect", {
+  size = function(o, w, h) local id = id_of(o) H:set(id, "w", w) H:set(id, "h", h) end,
+  color = function(o, c) H:set(id_of(o), "color", col(c)) end,
+})
+kind("bar", {
+  set = function(o, v) H:set(id_of(o), "value", math.max(0, math.min(100, v))) end,
+  size = function(o, w, h) local id = id_of(o) H:set(id, "w", w) H:set(id, "h", h) end,
+})
+
+local function rows_of(items)
+  local out = {}
+  for i, it in ipairs(items) do
+    if type(it) == "table" then
+      out[i] = tostring(it.title or "") .. "\1" .. tostring(it.sub or "") .. "\1" .. tostring(it.right or "")
+    else
+      out[i] = tostring(it) .. "\1\1"
+    end
+  end
+  return table.concat(out, "\2")
+end
+kind("list", {
+  items = function(o, items)
+    local id = id_of(o)
+    lists[id].items = items
+    H:items(id, rows_of(items), #items)
+  end,
+  selected = function(o)
+    local s = int(H:getsel(id_of(o)))
+    return s >= 0 and s + 1 or nil
+  end,
+  select = function(o, i) H:setsel(id_of(o), i - 1) end,
+})
+
+local pix_meta = {__index = {size = function(p) return int(H:pixw(p.__pix)), int(H:pixh(p.__pix)) end}}
+local function to_pix(src, o)
+  if type(src) == "table" and src.__pix then return src.__pix end
+  if type(src) == "table" then
+    local pal = {}
+    for k, v in pairs(type(o) == "table" and o.palette or {}) do
+      pal[#pal + 1] = k .. "=" .. (v and string.format("%06X", col(v)) or "-")
+    end
+    return int(H:pix(table.concat(src, "\n"), table.concat(pal, ";")))
+  end
+  error("this preview shows pixel art written as rows, not PNG or GIF files", 3)
+end
+kind("image", {
+  set = function(o, src, opts) H:set(id_of(o), "pix", to_pix(src, opts)) end,
+  scale = function(o, s) H:set(id_of(o), "scale", s) end,
+})
+kind("canvas", {
+  clear = function(o, c) H:cvrect(id_of(o), 0, 0, 4096, 4096, px(c)) end,
+  pixel = function(o, x, y, c) H:cvrect(id_of(o), x, y, 1, 1, px(c)) end,
+  rect = function(o, x, y, w, h, c) H:cvrect(id_of(o), x, y, w, h, px(c)) end,
+  image = function(o, src, x, y, opts) H:cvimage(id_of(o), to_pix(src, opts), x, y) end,
+  line = function() end,
+  get = function() return nil end,
+})
+
+ui = {W = 320, H = 218}
+function ui.bg(c) H:bg(col(c)) end
+function ui.label(x, y, text, o)
+  o = o or {}
+  local size = o.size or 14
+  if size ~= 12 and size ~= 14 and size ~= 20 and size ~= 32 then error("size must be 12, 14, 20 or 32", 2) end
+  return new("label", {x = x, y = y, text = tostring(text), size = size, color = col(o.color or "text"),
+    mono = o.mono == true or size == 12, w = o.w or 0, align = o.align or "left"})
+end
+function ui.rect(x, y, w, h, o)
+  o = o or {}
+  return new("rect", {x = x, y = y, w = w, h = h, color = col(o.color or "panel"), radius = o.radius or 0,
+    border = o.border and col(o.border) or -1})
+end
+function ui.bar(x, y, w, h, v)
+  return new("bar", {x = x, y = y, w = w, h = h, value = math.max(0, math.min(100, v or 0))})
+end
+function ui.list(x, y, w, h, items, o)
+  local l = new("list", {x = x, y = y, w = w, h = h, hasSel = o ~= nil and o.on_select ~= nil})
+  lists[l.__id] = {items = items, sel = o and o.on_select}
+  H:items(l.__id, rows_of(items), #items)
+  return l
+end
+function ui.load(src, o) return setmetatable({__pix = to_pix(src, o)}, pix_meta) end
+function ui.image(x, y, src, o)
+  return new("image", {x = x, y = y, scale = o and o.scale or 1, pix = to_pix(src, o)})
+end
+function ui.canvas(x, y, w, h, o)
+  local c = new("canvas", {x = x, y = y, scale = o and o.scale or 1})
+  H:newcanvas(c.__id, w, h, px(o and o.color))
+  return c
+end
+function ui.hint(t) H:hint(t or "") end
+function ui.toast(t) H:toast(tostring(t)) end
+function ui.clear() H:clear() lists = {} end
+function ui.confirm(text, fn)
+  if confirm_cb then error("a dialog is already open", 2) end
+  confirm_cb = fn
+  H:modal(tostring(text))
+end
+function ui.input(_, _, fn) fn(nil) end
+
+-- led, timer, sys, badge
+led = {count = 8}
+function led.hex(i, c) H:led(i, c & 0xFFFFFF) end
+function led.set(i, r, g, b) H:led(i, r << 16 | g << 8 | b) end
+function led.fill(r, g, b) for i = 1, 8 do led.set(i, r, g, b) end end
+function led.off() for i = 1, 8 do H:led(i, 0) end end
+
+local timers, timer_seq = {}, 0
+local function add_timer(ms, fn, every)
+  local n = 0
+  for _ in pairs(timers) do n = n + 1 end
+  if n >= 8 then error("too many timers (8)", 3) end
+  ms = math.max(ms, 20)
+  timer_seq = timer_seq + 1
+  timers[timer_seq] = {fn = fn, due = int(H:now()) + ms, period = every and ms or nil}
+  return timer_seq
+end
+timer = {}
+function timer.after(ms, fn) return add_timer(ms, fn, false) end
+function timer.every(ms, fn) return add_timer(ms, fn, true) end
+function timer.cancel(id) timers[id] = nil end
+
+local t0 = int(H:now())
+sys = {}
+function sys.millis() return int(H:now()) - t0 end
+function sys.time() return int(H:epoch()) end
+function sys.battery() return 87 end
+function sys.keys() return {} end
+function sys.exit() H:exit() end
+badge = {}
+function badge.id() return H.id end
+function badge.owner() return H.owner end
+function badge.online() return false end
+
+-- storage, files, the radio
+local saved = H:stored()
+local store = saved and load_("return " .. saved)() or {}
+storage = {}
+function storage.get(k) return store[k] end
+function storage.set(k, v) store[k] = v H:store(ser(store)) end
+function storage.remove(k) storage.set(k, nil) end
+
+fs = {}
+function fs.read(path)
+  local s = H:file(path)
+  if not s then return nil, "not found" end
+  return s
+end
+function fs.exists(path) return H:file(path) ~= nil end
+function fs.load(path)
+  local s = H:file(path)
+  if not s then return nil, "not found" end
+  return load_(s, "=" .. path, "t")
+end
+
+mesh = {}
+function mesh.nearby()
+  local out = {}
+  for id, name, level, rssi in H:nearby():gmatch("([^\t\n]+)\t([^\t\n]*)\t(%-?%d+)\t(%-?%d+)\n") do
+    out[#out + 1] = {id = id, name = name, level = tonumber(level), rssi = tonumber(rssi), kind = "badge", bridged = false}
+  end
+  return out
+end
+function mesh.send(to, msg)
+  local s = ser(msg)
+  if #s > 200 then return nil, "message over 200 bytes" end
+  local err = H:send(to, s)
+  if err ~= "" then return nil, err end
+  return true
+end
+
+function print(...)
+  local t = {}
+  for i = 1, select("#", ...) do t[i] = tostring((select(i, ...))) end
+  H:log(table.concat(t, "\t"))
+end
+function collectgarbage() return 0 end
+load, loadfile, dofile, require, package, io, os, debug = nil
+
+-- What the page calls
+local function dispatch(what, a, b)
+  if what == "boot" then
+    assert(fs.load("main.lua"))()
+  elseif what == "tick" then
+    local now, due = int(H:now()), {}
+    for id, t in pairs(timers) do
+      if t.due <= now then due[#due + 1] = id end
+    end
+    table.sort(due)
+    for _, id in ipairs(due) do
+      local t = timers[id]
+      if t then
+        if t.period then
+          t.due = t.due + t.period
+          if t.due <= now then t.due = now + t.period end
+        else
+          timers[id] = nil
+        end
+        t.fn()
+      end
+    end
+    if on_tick then on_tick(50) end
+  elseif what == "key" then
+    return on_key ~= nil and on_key(a, b) and true or false
+  elseif what == "mesh" then
+    if on_mesh then on_mesh(a, load_("return " .. b)()) end
+  elseif what == "confirm" then
+    local f = confirm_cb
+    confirm_cb = nil
+    if f then f(a) end
+  elseif what == "select" then
+    local l = lists[int(a)]
+    if l and l.sel then l.sel(int(b), l.items[int(b)]) end
+  elseif what == "exit" then
+    if on_exit then on_exit() end
+  end
+end
+function __ev(...) return pcall(dispatch, ...) end
+</script>
+
+<script src="__FENGARI__"></script>
+<script>
+(() => {
+  "use strict";
+  const { lua, lauxlib, lualib, interop, to_luastring } = fengari;
+  const FILES = JSON.parse(document.getElementById("files").textContent);
+  const PRELUDE = document.getElementById("prelude").textContent;
+  const W = 320, H = 218, STATUS = 22, HINT = 16, ROW = 36, K = 3;
+  const ART = { k: 0x000000, w: 0xFFFFFF, p: 0x9945FF, g: 0x14F195, m: 0xEB54BC, v: 0xB6B0FF, b: 0x64A8F2,
+                a: 0x80ECFF, l: 0xACFF9B, y: 0xE8F180, o: 0xFF754A, "#": 0xFFFFFF };
+  const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif';
+  const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+  const css = (c) => "#" + (c & 0xFFFFFF).toString(16).padStart(6, "0");
+  const logEl = document.getElementById("log");
+  const mem = {};
+  const keep = {
+    get(k) { try { const v = localStorage.getItem(k); if (v !== null) return v; } catch (e) { /* no storage here */ } return mem[k]; },
+    set(k, v) { mem[k] = v; try { localStorage.setItem(k, v); } catch (e) { /* kept in memory */ } },
+    del(k) { delete mem[k]; try { localStorage.removeItem(k); } catch (e) { /* nothing to remove */ } },
+  };
+
+  const world = {
+    now: 0, start: Math.floor(Date.now() / 1000), badges: [], passers: [], queue: [],
+    member: true,
+    step(ms) {
+      this.now += ms;
+      const due = this.queue; this.queue = [];
+      for (const m of due) if (m.to.running) m.to.ev("mesh", m.from, m.text);
+      for (const b of this.badges) if (b.running) b.ev("tick");
+    },
+    skip(ms) {
+      for (let t = 0; t < ms; t += 500) this.step(500);
+      this.badges.forEach((b) => b.draw());
+    },
+  };
+
+  class Badge {
+    constructor(id, owner, title, sub) {
+      this.id = id; this.owner = owner; this.key = "kinlings-preview-" + id;
+      this.sent = [];
+      const el = document.createElement("div");
+      el.className = "badge";
+      el.innerHTML = `<div class="who"><b></b><span></span></div><div class="leds">${"<i></i>".repeat(8)}</div>
+        <canvas width="${W * K}" height="${(H + STATUS) * K}"></canvas>
+        <div class="pad"><div class="dpad">
+          <button type="button" class="up" data-k="up" aria-label="Up">UP</button>
+          <button type="button" class="left" data-k="left" aria-label="Left">LEFT</button>
+          <button type="button" class="right" data-k="right" aria-label="Right">RIGHT</button>
+          <button type="button" class="down" data-k="down" aria-label="Down">DOWN</button>
+        </div><div class="ab">
+          <button type="button" class="select" data-k="select">SELECT</button>
+          <button type="button" data-k="back">CANCEL</button>
+        </div></div>`;
+      el.querySelector("b").textContent = title;
+      el.querySelector("span").textContent = sub;
+      el.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => this.press(b.dataset.k)));
+      this.ledEls = [...el.querySelectorAll(".leds i")];
+      this.ctx = el.querySelector("canvas").getContext("2d");
+      document.getElementById("stage").appendChild(el);
+      this.boot();
+    }
+
+    reset() {
+      this.objs = new Map(); this.pixes = new Map(); this.nextId = 1;
+      this.hintText = ""; this.toasts = []; this.modalText = null; this.bgColor = 0;
+      this.leds = new Array(8).fill(0); this.failed = null; this.wantExit = false;
+    }
+
+    boot() {
+      this.reset();
+      const L = this.L = lauxlib.luaL_newstate();
+      lualib.luaL_openlibs(L);
+      lauxlib.luaL_requiref(L, to_luastring("js"), interop.luaopen_js, 1);
+      lua.lua_pop(L, 1);
+      interop.push(L, this.host());
+      lua.lua_setglobal(L, to_luastring("__host"));
+      this.running = true;
+      if (lauxlib.luaL_loadbuffer(L, to_luastring(PRELUDE), null, to_luastring("=preview")) !== lua.LUA_OK
+          || lua.lua_pcall(L, 0, 0, 0) !== lua.LUA_OK) {
+        this.fail(lua.lua_tojsstring(L, -1));
+        return;
+      }
+      this.ev("boot");
+      this.draw();
+    }
+
+    fail(msg) {
+      this.failed = String(msg); this.running = false; this.leds.fill(0);
+      logEl.textContent = this.owner + ": " + this.failed;
+    }
+
+    // Calls the app; returns what on_key returned for a key.
+    ev(what, a, b) {
+      if (!this.running) return false;
+      const L = this.L;
+      lua.lua_settop(L, 0);
+      lua.lua_getglobal(L, to_luastring("__ev"));
+      let n = 0;
+      for (const v of [what, a, b]) {
+        if (v === undefined) break;
+        if (typeof v === "string") lua.lua_pushstring(L, to_luastring(v));
+        else if (typeof v === "boolean") lua.lua_pushboolean(L, v);
+        else lua.lua_pushinteger(L, v | 0);
+        n++;
+      }
+      if (lua.lua_pcall(L, n, 2, 0) !== lua.LUA_OK) { this.fail(lua.lua_tojsstring(L, -1)); return false; }
+      if (!lua.lua_toboolean(L, 1)) { this.fail(lua.lua_tojsstring(L, 2)); return false; }
+      const r = lua.lua_toboolean(L, 2);
+      if (this.wantExit) this.close();
+      return r;
+    }
+
+    close() {
+      this.wantExit = false;
+      this.ev("exit");
+      this.running = false; this.reset();
+    }
+
+    // Keys, as the badge routes them: a dialog first, then a list, then the app.
+    press(k) {
+      if (!this.running) { if (k === "select") this.boot(); this.draw(); return; }
+      if (this.modalText !== null) {
+        if (k === "select" || k === "back") { this.modalText = null; this.ev("confirm", k === "select"); }
+      } else {
+        const lists = [...this.objs.values()].filter((o) => o.kind === "list" && !o.hidden);
+        const list = lists.length ? lists[lists.length - 1] : null;
+        if (list && (k === "up" || k === "down")) {
+          if (list.n) list.sel = (list.sel + (k === "down" ? 1 : -1) + list.n) % list.n;
+        } else if (list && k === "select" && list.hasSel && list.n) {
+          this.ev("select", list.id, list.sel + 1);
+        } else if (!this.ev("key", k, false) && k === "back" && this.running) {
+          this.close();
+        }
+      }
+      this.draw();
+    }
+
+    host() {
+      const b = this;
+      const obj = (id) => b.objs.get(id) || {};
+      return {
+        id: b.id, owner: b.owner,
+        newobj(kind) { const id = b.nextId++; b.objs.set(id, { id, kind, x: 0, y: 0, scale: 1, hidden: false, n: 0, sel: -1, rows: [] }); return id; },
+        set(id, key, v) { obj(id)[key] = v; },
+        del(id) { b.objs.delete(id); },
+        clear() { b.objs.clear(); b.hintText = ""; },
+        pix(rows, pal) {
+          const map = Object.assign({}, ART);
+          for (const p of pal ? pal.split(";") : []) map[p[0]] = p.slice(2) === "-" ? -1 : parseInt(p.slice(2), 16);
+          const lines = rows.split("\n"), w = Math.max(...lines.map((r) => r.length));
+          const data = new Int32Array(w * lines.length).fill(-1);
+          lines.forEach((r, y) => { for (let x = 0; x < r.length; x++) {
+            const ch = r[x];
+            if (ch === "." || ch === " ") continue;
+            if (!(ch in map)) throw new Error("row " + (y + 1) + ": '" + ch + "' isn't in the palette");
+            data[y * w + x] = map[ch];
+          } });
+          const id = b.nextId++;
+          b.pixes.set(id, { w, h: lines.length, data });
+          return id;
+        },
+        pixw(id) { return b.pixes.get(id).w; },
+        pixh(id) { return b.pixes.get(id).h; },
+        newcanvas(id, w, h, fill) { const p = b.nextId++; b.pixes.set(p, { w, h, data: new Int32Array(w * h).fill(fill) }); obj(id).pix = p; },
+        cvrect(id, x, y, w, h, c) {
+          const p = b.pixes.get(obj(id).pix); if (!p) return;
+          const x2 = Math.min(x + w, p.w), y2 = Math.min(y + h, p.h);
+          for (let j = Math.max(y, 0); j < y2; j++) for (let i = Math.max(x, 0); i < x2; i++) p.data[j * p.w + i] = c;
+        },
+        cvimage(id, src, x, y) {
+          const p = b.pixes.get(obj(id).pix), s = b.pixes.get(src); if (!p || !s) return;
+          for (let j = 0; j < s.h; j++) for (let i = 0; i < s.w; i++) {
+            const c = s.data[j * s.w + i], tx = x + i, ty = y + j;
+            if (c >= 0 && tx >= 0 && ty >= 0 && tx < p.w && ty < p.h) p.data[ty * p.w + tx] = c;
+          }
+        },
+        items(id, text, n) {
+          const o = obj(id);
+          o.rows = n ? text.split("\u0002").map((r) => r.split("\u0001")) : [];
+          o.n = o.rows.length;
+          o.sel = o.n ? Math.max(0, Math.min(o.sel, o.n - 1)) : -1;
+        },
+        getsel(id) { return obj(id).sel; },
+        setsel(id, i) { const o = obj(id); o.sel = o.n ? Math.max(0, Math.min(i, o.n - 1)) : -1; },
+        hint(t) { b.hintText = t; },
+        toast(t) { b.toasts.push({ at: performance.now(), text: t }); },
+        bg(c) { b.bgColor = c; },
+        modal(t) { b.modalText = t; },
+        led(i, c) { if (i >= 1 && i <= 8) b.leds[i - 1] = c; },
+        now() { return world.now; },
+        epoch() { return world.start + Math.floor(world.now / 1000); },
+        exit() { b.wantExit = true; },
+        file(path) {
+          if (path === "data/members.txt") return world.member ? "4BCD771 the friend in this preview\n" : "# nobody\n";
+          return Object.prototype.hasOwnProperty.call(FILES, path) ? FILES[path] : undefined;
+        },
+        stored() { return keep.get(b.key) || undefined; },
+        store(s) { keep.set(b.key, s); },
+        nearby() {
+          const near = world.badges.filter((o) => o !== b).map((o) => [o.id, o.owner])
+            .concat(world.passers.slice(-14).reverse());
+          return near.map(([id, name], i) => `${id}\t${name}\t1\t${-45 - i}\n`).join("");
+        },
+        send(to, text) {
+          b.sent = b.sent.filter((t) => world.now - t < 1000);
+          if (b.sent.length >= 4) return "too fast: 4 messages per second";
+          const peers = world.badges.filter((o) => o !== b && (to === "*" || o.id === to));
+          if (to !== "*" && !peers.length) return "not nearby";
+          b.sent.push(world.now);
+          for (const o of peers) world.queue.push({ to: o, from: b.id, text });
+          return "";
+        },
+        log(s) { logEl.textContent = b.owner + ": " + s; },
+      };
+    }
+
+    // ---- the screen ----
+    draw() {
+      const c = this.ctx;
+      c.setTransform(K, 0, 0, K, 0, 0);
+      c.textBaseline = "top";
+      c.fillStyle = "#111116"; c.fillRect(0, 0, W, STATUS);
+      c.fillStyle = "#8E8C9E"; c.font = `11px ${MONO}`;
+      c.fillText("Kinlings", 6, 5);
+      c.textAlign = "right"; c.fillText(this.owner, W - 6, 5); c.textAlign = "left";
+      this.ledEls.forEach((el, i) => { el.style.background = this.leds[i] ? css(this.leds[i]) : ""; el.style.boxShadow = this.leds[i] ? "0 0 8px " + css(this.leds[i]) : ""; });
+      c.save(); c.translate(0, STATUS);
+      c.beginPath(); c.rect(0, 0, W, H); c.clip();
+      c.fillStyle = css(this.bgColor); c.fillRect(0, 0, W, H);
+      if (!this.running) {
+        c.fillStyle = this.failed ? "#FF754A" : "#FFFFFF"; c.font = `18px ${SANS}`;
+        c.fillText(this.failed ? "Script error" : "Kinlings is closed", 12, 14);
+        c.fillStyle = "#FFFFFF"; c.font = `11px ${MONO}`;
+        if (this.failed) this.wrap(this.failed, 296).forEach((l, i) => c.fillText(l, 12, 50 + i * 15));
+        c.fillStyle = "#8E8C9E"; c.fillText("SELECT opens it again", 12, H - 20);
+        c.restore(); return;
+      }
+      for (const o of this.objs.values()) if (!o.hidden) this.drawObj(o);
+      if (this.hintText) {
+        c.fillStyle = "#111116"; c.fillRect(0, H - HINT, W, HINT);
+        c.fillStyle = "#8E8C9E"; c.font = `11px ${MONO}`; c.fillText(this.hintText, 6, H - HINT + 2);
+      }
+      const now = performance.now();
+      this.toasts = this.toasts.filter((t) => now - t.at < 2600);
+      if (this.toasts.length) {
+        const t = this.toasts[this.toasts.length - 1].text;
+        c.font = `13px ${SANS}`;
+        const tw = Math.min(c.measureText(t).width, W - 40);
+        this.box(W / 2 - tw / 2 - 10, H - 50, tw + 20, 24, 8, "#1C1B26", "#2A2935");
+        c.fillStyle = "#FFFFFF"; c.fillText(t, W / 2 - tw / 2, H - 45, tw);
+      }
+      if (this.modalText !== null) {
+        c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(0, 0, W, H);
+        c.font = `13px ${SANS}`;
+        const lines = this.wrap(this.modalText, W - 66), ph = lines.length * 18 + 46;
+        const py = (H - ph) / 2;
+        this.box(20, py, W - 40, ph, 6, "#111116", "#9945FF");
+        c.fillStyle = "#FFFFFF"; lines.forEach((l, i) => c.fillText(l, 32, py + 12 + i * 18));
+        c.fillStyle = "#8E8C9E"; c.font = `11px ${MONO}`; c.fillText("SELECT yes   CANCEL no", 32, py + 22 + lines.length * 18);
+      }
+      c.restore();
+    }
+
+    box(x, y, w, h, r, fill, stroke) {
+      const c = this.ctx;
+      c.beginPath();
+      if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h);
+      if (fill) { c.fillStyle = fill; c.fill(); }
+      if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
+    }
+
+    wrap(text, width) {
+      const c = this.ctx, out = [];
+      for (const para of String(text).split("\n")) {
+        let cur = "";
+        for (const word of para.split(" ")) {
+          const t = cur ? cur + " " + word : word;
+          if (cur && c.measureText(t).width > width) { out.push(cur); cur = word; } else cur = t;
+        }
+        out.push(cur);
+      }
+      return out;
+    }
+
+    drawObj(o) {
+      const c = this.ctx;
+      if (o.kind === "rect") {
+        this.box(o.x, o.y, o.w, o.h, Math.min(o.radius || 0, o.w / 2, o.h / 2), css(o.color), o.border >= 0 ? css(o.border) : null);
+      } else if (o.kind === "bar") {
+        this.box(o.x, o.y, o.w, o.h, o.h / 2, "#1C1B26");
+        if (o.value > 0) {
+          const g = c.createLinearGradient(o.x, 0, o.x + o.w, 0);
+          g.addColorStop(0, "#9945FF"); g.addColorStop(1, "#14F195");
+          this.box(o.x, o.y, Math.max(o.h, o.w * o.value / 100), o.h, o.h / 2, g);
+        }
+      } else if (o.kind === "label") {
+        const size = { 12: 11, 14: 13, 20: 18, 32: 29 }[o.size], lh = { 12: 15, 14: 18, 20: 25, 32: 38 }[o.size];
+        c.font = `${size}px ${o.mono ? MONO : SANS}`; c.fillStyle = css(o.color);
+        const lines = o.w ? this.wrap(o.text, o.w) : String(o.text).split("\n");
+        lines.forEach((l, i) => {
+          let x = o.x;
+          if (o.w && o.align !== "left") x += (o.w - c.measureText(l).width) / (o.align === "center" ? 2 : 1);
+          c.fillText(l, x, o.y + i * lh);
+        });
+      } else if (o.kind === "image" || o.kind === "canvas") {
+        const p = this.pixes.get(o.pix); if (!p) return;
+        const s = o.scale;
+        for (let j = 0; j < p.h; j++) for (let i = 0; i < p.w; i++) {
+          const v = p.data[j * p.w + i];
+          if (v >= 0) { c.fillStyle = css(v); c.fillRect(o.x + i * s, o.y + j * s, s, s); }
+        }
+      } else if (o.kind === "list") {
+        const vis = Math.max(1, Math.floor(o.h / ROW));
+        const top = Math.max(0, Math.min(o.sel - vis + 1, o.n - vis));
+        if (!o.n) { c.font = `13px ${SANS}`; c.fillStyle = "#8E8C9E"; c.fillText("Nothing here yet", o.x + 12, o.y + 10); }
+        for (let r = 0; r < vis && top + r < o.n; r++) {
+          const [title, sub, right] = o.rows[top + r], y = o.y + r * ROW;
+          if (top + r === o.sel) {
+            c.fillStyle = "#1C1B26"; c.fillRect(o.x, y, o.w, ROW);
+            c.fillStyle = "#14F195"; c.fillRect(o.x, y, 3, ROW);
+          }
+          c.font = `13px ${SANS}`; c.fillStyle = "#FFFFFF"; c.fillText(title, o.x + 12, y + (sub ? 4 : 10));
+          c.font = `11px ${MONO}`; c.fillStyle = "#8E8C9E";
+          if (sub) c.fillText(sub, o.x + 12, y + 21);
+          if (right) { c.textAlign = "right"; c.fillText(right, o.x + o.w - 10, y + 12); c.textAlign = "left"; }
+        }
+      }
+    }
+  }
+
+  function start() {
+    document.getElementById("stage").textContent = "";
+    world.badges = [
+      new Badge("7K2Q9M", "@you", "Your badge", "@you"),
+      new Badge("4BCD77", "@abcd_friend", "A friend's badge", "@abcd_friend"),
+    ];
+  }
+
+  document.getElementById("walk").addEventListener("click", () => {
+    const n = world.passers.length + 1;
+    const id = "P" + String(10000 + ((n * 7919) % 89999)).slice(0, 5);
+    world.passers.push([id, "@passerby" + n]);
+    logEl.textContent = "@passerby" + n + " is nearby. Creatures forage every few seconds while the game is open.";
+  });
+  document.getElementById("skip2").addEventListener("click", () => world.skip(120000));
+  document.getElementById("skip4").addEventListener("click", () => world.skip(4 * 3600 * 1000 + 60000));
+  document.getElementById("reset").addEventListener("click", () => {
+    world.badges.forEach((b) => keep.del(b.key));
+    world.passers = []; world.queue = [];
+    logEl.textContent = "Both badges are back to an egg.";
+    start();
+  });
+  document.getElementById("member").addEventListener("change", (e) => {
+    world.member = e.target.checked;
+    logEl.textContent = world.member ? "The friend is an ABCD member again." : "The friend is now an ordinary player.";
+    start();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "select", Escape: "back" }[e.key];
+    if (!k || (e.target instanceof HTMLButtonElement && k === "select")) return;
+    e.preventDefault();
+    world.badges[0].press(k);
+  });
+
+  world.member = document.getElementById("member").checked;
+  start();
+  let last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    let behind = Math.min(now - last, 1000);     // a hidden tab catches up at most a second
+    last = now;
+    for (; behind >= 50; behind -= 50) world.step(50);
+    last -= behind;
+    world.badges.forEach((b) => b.draw());
+  }, 50);
+})();
+</script>
