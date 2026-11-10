@@ -6,7 +6,8 @@ working title.
 You raise a creature that only eats what other people give it.
 
 - **Alone, you forage.** With the app open, your badge finds a snack near each
-  new badge around you, whether or not that badge has the app.
+  new badge around you, whether or not that badge has the app, and blinks its
+  LEDs in the snack's colour when it does.
 - **Together, you swap.** Pick someone nearby who has the app open; they say
   yes, and you feed each other's creatures.
 - **New people make it grow.** The first snack from each new person counts.
@@ -53,8 +54,8 @@ Keys: SELECT swap, UP your pack, DOWN help, LEFT/RIGHT change what the
 creature wears, CANCEL back or exit.
 
 To get a feel for it without a badge, `python3 tools/web/build.py preview.html`
-makes one page that runs the same files in a browser, with two badges that can
-swap with each other. It uses a browser Lua and a drawn screen, and doesn't
+makes one page that runs the same files in a browser: your badge and twelve
+friends' badges, three of them ABCD members, that you can swap with. It uses a browser Lua and a drawn screen, and doesn't
 enforce the badge's memory limit, so it shows how the game plays, not whether
 it runs on a badge.
 

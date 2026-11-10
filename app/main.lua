@@ -141,12 +141,14 @@ function on_mesh(from, m)
 end
 
 -- ---------------------------------------------------------------------------
--- Foraging: a snack from each new badge around, one every few seconds
+-- Foraging: a snack from each new badge around, one every three seconds,
+-- with a flash of the LEDs so you notice without looking at the screen
 
 local function found(k, where)
   S.bk = S.bk .. k
   save()
   ui.toast("Found a " .. ({"berry", "leaf", "starfruit", "dewdrop"})[k] .. " " .. where)
+  glow, glow_c = 4, ({0xEB54BC, 0xACFF9B, 0xE8F180, 0x80ECFF})[k]    -- two blinks in the snack's colour
   if view.refresh then view.refresh() end
 end
 
@@ -160,7 +162,7 @@ local function forage()
     end
   end
   lean = lean + 1
-  if #S.bk == 0 and lean >= 24 then     -- nobody new for two minutes, and nothing to give
+  if #S.bk == 0 and lean >= 40 then     -- nobody new for two minutes, and nothing to give
     lean = 0
     found(math.random(4), "on the floor")
   end
@@ -180,7 +182,7 @@ timer.every(500, function()
   end
   if S.sp then
     if beat % 6 == 1 then mesh.send("*", {t = "h", s = S.sp, g = S.g, n = NAME}) end
-    if beat % 10 == 0 then forage() end
+    if beat % 6 == 4 then forage() end
   end
   if out and now - out.t > 1500 then
     if out.n >= 4 then
@@ -191,7 +193,7 @@ timer.every(500, function()
       mesh.send(out.to, {t = "q", x = out.x, k = out.k})
     end
   end
-  -- LEDs: a flash after something happened, else one per friend in range
+  -- LEDs: a flash after a swap or a find, else one lit per friend in range
   if glow > 0 then glow = glow - 1 end
   local lit = glow % 2 == 1 and 8 or glow == 0 and S.sp and not asleep() and math.min(npeers, 8) or 0
   local c = glow > 0 and glow_c or GLOW[S.sp or 1]

@@ -65,6 +65,13 @@
   .ab { display: flex; flex-direction: column; gap: 8px; }
   .ab button { min-width: 104px; height: 44px; }
   .ab .select { background: #14F195; border-color: #14F195; color: #0b241a; font-weight: 500; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button {
+    font: 12px var(--mono); color: var(--device-ink); background: transparent; border: 1px solid var(--key-edge);
+    border-radius: 999px; padding: 5px 9px; cursor: pointer; touch-action: manipulation;
+  }
+  .chips button[aria-pressed="true"] { background: #fff; color: #17161f; border-color: #fff; }
+  .chips button.asking::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #14F195; margin-left: 6px; }
   .steps { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
   .steps h2 { font-family: var(--display); font-size: 17px; margin: 0 0 8px; }
   .steps ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; max-width: 68ch; }
@@ -76,7 +83,7 @@
 <div class="wrap">
   <header>
     <h1>Kinlings preview</h1>
-    <p class="lede">Two badges running the game. Yours is on the left (or top). The other belongs to a friend standing next to you, so you can play both sides of a swap.</p>
+    <p class="lede">Your badge, and twelve friends standing around you, each running their own copy of the game. Feed and be fed until your creature grows up.</p>
   </header>
 
   <div class="tools">
@@ -84,7 +91,8 @@
     <button id="skip2" type="button">Skip 2 minutes</button>
     <button id="skip4" type="button">Skip 4 hours</button>
     <button id="reset" type="button">Start over</button>
-    <label for="member"><input id="member" type="checkbox" checked> The friend is an ABCD member</label>
+    <label for="auto"><input id="auto" type="checkbox" checked> Friends say yes on their own</label>
+    <label for="member"><input id="member" type="checkbox" checked> Three friends are ABCD members</label>
   </div>
 
   <div class="stage" id="stage"></div>
@@ -93,12 +101,13 @@
   <section class="steps">
     <h2>A quick tour</h2>
     <ol>
-      <li>Press <kbd>SELECT</kbd> five times on each badge to hatch its egg.</li>
-      <li>Tap <b>Someone walks past</b> a few times. Each passer-by is a badge without the app; within a few seconds both creatures forage a snack from them.</li>
-      <li>On your badge press <kbd>SELECT</kbd>, pick <b>@abcd_friend</b> and press <kbd>SELECT</kbd> again. On the friend's badge press <kbd>SELECT</kbd> to say yes.</li>
-      <li>Your creature has now been fed by one person, the friend is in your pack, and because they are an ABCD member it is wearing their crown. <kbd>LEFT</kbd> and <kbd>RIGHT</kbd> take it off and on.</li>
-      <li>Swap again and nothing grows: only a new person's first snack counts. Untick the box above and start over to see a swap with a non-member.</li>
-      <li><b>Skip 4 hours</b> puts an unfed creature to sleep. <kbd>UP</kbd> shows your pack, <kbd>DOWN</kbd> the help screen, <kbd>CANCEL</kbd> goes back.</li>
+      <li>Press <kbd>SELECT</kbd> five times on your badge to hatch the egg. Your friends have hatched theirs already.</li>
+      <li>Watch the lights. Every three seconds your creature forages a snack from a badge nearby it hasn't foraged from yet, and the LEDs blink twice in the snack's colour. <b>Someone walks past</b> adds a stranger without the app to forage from.</li>
+      <li>Press <kbd>SELECT</kbd>, pick a friend with <kbd>UP</kbd> and <kbd>DOWN</kbd>, and press <kbd>SELECT</kbd> again. They say yes after a moment, and you feed each other.</li>
+      <li>Each new friend who feeds you counts once. After two your creature changes shape, after six it is fully grown, and twelve fills the next bar.</li>
+      <li><b>@abcd_ana</b>, <b>@abcd_dee</b> and <b>@abcd_hana</b> are ABCD members: they give a crown, a halo and a flower. <kbd>LEFT</kbd> and <kbd>RIGHT</kbd> change what your creature wears.</li>
+      <li>Out of snacks? <b>Skip 2 minutes</b> lets everyone forage. <b>Skip 4 hours</b> puts unfed creatures to sleep. <kbd>UP</kbd> shows your pack, <kbd>DOWN</kbd> the help screen, <kbd>CANCEL</kbd> goes back.</li>
+      <li>To answer for a friend yourself, untick <b>Friends say yes on their own</b> and tap their name above the second badge; a dot marks whoever is being asked.</li>
     </ol>
   </section>
 
@@ -411,45 +420,46 @@ function __ev(...) return pcall(dispatch, ...) end
     del(k) { delete mem[k]; try { localStorage.removeItem(k); } catch (e) { /* nothing to remove */ } },
   };
 
+  // The friends: id, name, and for ABCD members the item they hand out.
+  const FRIENDS = [
+    ["4BCD77", "@abcd_ana", 1], ["B3N001", "@ben", 0], ["CH1D12", "@chidi", 0], ["D33ABC", "@abcd_dee", 2],
+    ["EL1X04", "@eli", 0], ["F4R4H5", "@farah", 0], ["GU5T06", "@gus", 0], ["H4N4BC", "@abcd_hana", 3],
+    ["1V0Z08", "@ivo", 0], ["JUN309", "@jun", 0], ["K1R410", "@kira", 0], ["L30Q11", "@leo", 0],
+  ];
+
   const world = {
     now: 0, start: Math.floor(Date.now() / 1000), badges: [], passers: [], queue: [],
-    member: true,
+    member: true, auto: true,
     step(ms) {
       this.now += ms;
       const due = this.queue; this.queue = [];
       for (const m of due) if (m.to.running) m.to.ev("mesh", m.from, m.text);
-      for (const b of this.badges) if (b.running) b.ev("tick");
+      for (const b of this.badges) {
+        if (b.running) b.ev("tick");
+        // a friend answers "... wants to swap snacks. Swap?" after a moment
+        if (b.friend && b.modalText !== null && this.auto) {
+          if (b.answerAt == null) b.answerAt = this.now + 700;
+          else if (this.now >= b.answerAt) { b.answerAt = null; b.press("select"); }
+        } else {
+          b.answerAt = null;
+        }
+      }
     },
     skip(ms) {
       for (let t = 0; t < ms; t += 500) this.step(500);
-      this.badges.forEach((b) => b.draw());
+    },
+    jump(ms) {                        // the clock moves on; nothing happens in between
+      this.now += ms;
+      this.skip(2000);
     },
   };
 
   class Badge {
-    constructor(id, owner, title, sub) {
-      this.id = id; this.owner = owner; this.key = "kinlings-preview-" + id;
-      this.sent = [];
-      const el = document.createElement("div");
-      el.className = "badge";
-      el.innerHTML = `<div class="who"><b></b><span></span></div><div class="leds">${"<i></i>".repeat(8)}</div>
-        <canvas width="${W * K}" height="${(H + STATUS) * K}"></canvas>
-        <div class="pad"><div class="dpad">
-          <button type="button" class="up" data-k="up" aria-label="Up">UP</button>
-          <button type="button" class="left" data-k="left" aria-label="Left">LEFT</button>
-          <button type="button" class="right" data-k="right" aria-label="Right">RIGHT</button>
-          <button type="button" class="down" data-k="down" aria-label="Down">DOWN</button>
-        </div><div class="ab">
-          <button type="button" class="select" data-k="select">SELECT</button>
-          <button type="button" data-k="back">CANCEL</button>
-        </div></div>`;
-      el.querySelector("b").textContent = title;
-      el.querySelector("span").textContent = sub;
-      el.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => this.press(b.dataset.k)));
-      this.ledEls = [...el.querySelectorAll(".leds i")];
-      this.ctx = el.querySelector("canvas").getContext("2d");
-      document.getElementById("stage").appendChild(el);
+    constructor(id, owner, friend) {
+      this.id = id; this.owner = owner; this.friend = friend; this.key = "kinlings-preview-" + id;
+      this.sent = []; this.device = null; this.answerAt = null;
       this.boot();
+      if (friend && this.running && !keep.get(this.key)) for (let i = 0; i < 5; i++) this.press("select");
     }
 
     reset() {
@@ -473,11 +483,10 @@ function __ev(...) return pcall(dispatch, ...) end
         return;
       }
       this.ev("boot");
-      this.draw();
     }
 
     fail(msg) {
-      this.failed = String(msg); this.running = false; this.leds.fill(0);
+      this.failed = String(msg || "error"); this.running = false; this.leds.fill(0);
       logEl.textContent = this.owner + ": " + this.failed;
     }
 
@@ -510,21 +519,20 @@ function __ev(...) return pcall(dispatch, ...) end
 
     // Keys, as the badge routes them: a dialog first, then a list, then the app.
     press(k) {
-      if (!this.running) { if (k === "select") this.boot(); this.draw(); return; }
+      if (!this.running) { if (k === "select") this.boot(); return; }
       if (this.modalText !== null) {
         if (k === "select" || k === "back") { this.modalText = null; this.ev("confirm", k === "select"); }
-      } else {
-        const lists = [...this.objs.values()].filter((o) => o.kind === "list" && !o.hidden);
-        const list = lists.length ? lists[lists.length - 1] : null;
-        if (list && (k === "up" || k === "down")) {
-          if (list.n) list.sel = (list.sel + (k === "down" ? 1 : -1) + list.n) % list.n;
-        } else if (list && k === "select" && list.hasSel && list.n) {
-          this.ev("select", list.id, list.sel + 1);
-        } else if (!this.ev("key", k, false) && k === "back" && this.running) {
-          this.close();
-        }
+        return;
       }
-      this.draw();
+      const lists = [...this.objs.values()].filter((o) => o.kind === "list" && !o.hidden);
+      const list = lists.length ? lists[lists.length - 1] : null;
+      if (list && (k === "up" || k === "down")) {
+        if (list.n) list.sel = (list.sel + (k === "down" ? 1 : -1) + list.n) % list.n;
+      } else if (list && k === "select" && list.hasSel && list.n) {
+        this.ev("select", list.id, list.sel + 1);
+      } else if (!this.ev("key", k, false) && k === "back" && this.running) {
+        this.close();
+      }
     }
 
     host() {
@@ -575,7 +583,7 @@ function __ev(...) return pcall(dispatch, ...) end
         getsel(id) { return obj(id).sel; },
         setsel(id, i) { const o = obj(id); o.sel = o.n ? Math.max(0, Math.min(i, o.n - 1)) : -1; },
         hint(t) { b.hintText = t; },
-        toast(t) { b.toasts.push({ at: performance.now(), text: t }); },
+        toast(t) { b.toasts.push({ at: performance.now(), text: t }); if (!b.friend) logEl.textContent = t; },
         bg(c) { b.bgColor = c; },
         modal(t) { b.modalText = t; },
         led(i, c) { if (i >= 1 && i <= 8) b.leds[i - 1] = c; },
@@ -583,14 +591,18 @@ function __ev(...) return pcall(dispatch, ...) end
         epoch() { return world.start + Math.floor(world.now / 1000); },
         exit() { b.wantExit = true; },
         file(path) {
-          if (path === "data/members.txt") return world.member ? "4BCD771 the friend in this preview\n" : "# nobody\n";
+          if (path === "data/members.txt") {
+            return world.member ? FRIENDS.filter((f) => f[2]).map((f) => f[0] + f[2] + " " + f[1] + "\n").join("") : "# nobody\n";
+          }
           return Object.prototype.hasOwnProperty.call(FILES, path) ? FILES[path] : undefined;
         },
         stored() { return keep.get(b.key) || undefined; },
         store(s) { keep.set(b.key, s); },
+        // Like the badge: the 16 strongest. The newest passers-by are closest.
         nearby() {
-          const near = world.badges.filter((o) => o !== b).map((o) => [o.id, o.owner])
-            .concat(world.passers.slice(-14).reverse());
+          const near = world.passers.slice(-4).reverse()
+            .concat(world.badges.filter((o) => o !== b).map((o) => [o.id, o.owner]))
+            .concat(world.passers.slice(0, -4).reverse()).slice(0, 16);
           return near.map(([id, name], i) => `${id}\t${name}\t1\t${-45 - i}\n`).join("");
         },
         send(to, text) {
@@ -605,46 +617,98 @@ function __ev(...) return pcall(dispatch, ...) end
         log(s) { logEl.textContent = b.owner + ": " + s; },
       };
     }
+  }
 
-    // ---- the screen ----
+  // A badge you can see and press: its screen, LEDs and buttons, showing one Badge.
+  class Device {
+    constructor(title, pick) {
+      const el = this.el = document.createElement("div");
+      el.className = "badge";
+      el.innerHTML = `<div class="who"><b></b><span></span></div>${pick ? '<div class="chips"></div>' : ""}
+        <div class="leds">${"<i></i>".repeat(8)}</div>
+        <canvas width="${W * K}" height="${(H + STATUS) * K}"></canvas>
+        <div class="pad"><div class="dpad">
+          <button type="button" class="up" data-k="up" aria-label="Up">UP</button>
+          <button type="button" class="left" data-k="left" aria-label="Left">LEFT</button>
+          <button type="button" class="right" data-k="right" aria-label="Right">RIGHT</button>
+          <button type="button" class="down" data-k="down" aria-label="Down">DOWN</button>
+        </div><div class="ab">
+          <button type="button" class="select" data-k="select">SELECT</button>
+          <button type="button" data-k="back">CANCEL</button>
+        </div></div>`;
+      el.querySelector("b").textContent = title;
+      this.sub = el.querySelector(".who span");
+      el.querySelectorAll(".pad button").forEach((b) => b.addEventListener("click", () => { this.badge.press(b.dataset.k); this.draw(); }));
+      this.ledEls = [...el.querySelectorAll(".leds i")];
+      this.ctx = el.querySelector("canvas").getContext("2d");
+      this.chips = el.querySelector(".chips");
+      this.marks = "";
+      document.getElementById("stage").appendChild(el);
+    }
+
+    show(badge) {
+      this.badge = badge;
+      this.sub.textContent = badge.owner;
+      this.marks = "";
+      this.draw();
+    }
+
+    // The friends to choose from; a dot on whoever has a question waiting.
+    pickers(friends) {
+      if (!this.chips) return;
+      const marks = friends.map((f) => (f === this.badge ? "v" : "") + (f.modalText !== null ? "a" : "")).join(",");
+      if (marks === this.marks && this.chips.children.length === friends.length) return;
+      this.marks = marks;
+      this.chips.textContent = "";
+      for (const f of friends) {
+        const c = document.createElement("button");
+        c.type = "button";
+        c.textContent = f.owner;
+        c.setAttribute("aria-pressed", String(f === this.badge));
+        if (f.modalText !== null) c.className = "asking";
+        c.addEventListener("click", () => this.show(f));
+        this.chips.appendChild(c);
+      }
+    }
+
     draw() {
-      const c = this.ctx;
+      const b = this.badge, c = this.ctx;
       c.setTransform(K, 0, 0, K, 0, 0);
       c.textBaseline = "top";
       c.fillStyle = "#111116"; c.fillRect(0, 0, W, STATUS);
       c.fillStyle = "#8E8C9E"; c.font = `11px ${MONO}`;
       c.fillText("Kinlings", 6, 5);
-      c.textAlign = "right"; c.fillText(this.owner, W - 6, 5); c.textAlign = "left";
-      this.ledEls.forEach((el, i) => { el.style.background = this.leds[i] ? css(this.leds[i]) : ""; el.style.boxShadow = this.leds[i] ? "0 0 8px " + css(this.leds[i]) : ""; });
+      c.textAlign = "right"; c.fillText(b.owner, W - 6, 5); c.textAlign = "left";
+      this.ledEls.forEach((el, i) => { el.style.background = b.leds[i] ? css(b.leds[i]) : ""; el.style.boxShadow = b.leds[i] ? "0 0 8px " + css(b.leds[i]) : ""; });
       c.save(); c.translate(0, STATUS);
       c.beginPath(); c.rect(0, 0, W, H); c.clip();
-      c.fillStyle = css(this.bgColor); c.fillRect(0, 0, W, H);
-      if (!this.running) {
-        c.fillStyle = this.failed ? "#FF754A" : "#FFFFFF"; c.font = `18px ${SANS}`;
-        c.fillText(this.failed ? "Script error" : "Kinlings is closed", 12, 14);
+      c.fillStyle = css(b.bgColor); c.fillRect(0, 0, W, H);
+      if (!b.running) {
+        c.fillStyle = b.failed ? "#FF754A" : "#FFFFFF"; c.font = `18px ${SANS}`;
+        c.fillText(b.failed ? "Script error" : "Kinlings is closed", 12, 14);
         c.fillStyle = "#FFFFFF"; c.font = `11px ${MONO}`;
-        if (this.failed) this.wrap(this.failed, 296).forEach((l, i) => c.fillText(l, 12, 50 + i * 15));
+        if (b.failed) this.wrap(b.failed, 296).forEach((l, i) => c.fillText(l, 12, 50 + i * 15));
         c.fillStyle = "#8E8C9E"; c.fillText("SELECT opens it again", 12, H - 20);
         c.restore(); return;
       }
-      for (const o of this.objs.values()) if (!o.hidden) this.drawObj(o);
-      if (this.hintText) {
+      for (const o of b.objs.values()) if (!o.hidden) this.drawObj(b, o);
+      if (b.hintText) {
         c.fillStyle = "#111116"; c.fillRect(0, H - HINT, W, HINT);
-        c.fillStyle = "#8E8C9E"; c.font = `11px ${MONO}`; c.fillText(this.hintText, 6, H - HINT + 2);
+        c.fillStyle = "#8E8C9E"; c.font = `11px ${MONO}`; c.fillText(b.hintText, 6, H - HINT + 2);
       }
       const now = performance.now();
-      this.toasts = this.toasts.filter((t) => now - t.at < 2600);
-      if (this.toasts.length) {
-        const t = this.toasts[this.toasts.length - 1].text;
+      b.toasts = b.toasts.filter((t) => now - t.at < 2600);
+      if (b.toasts.length) {
+        const t = b.toasts[b.toasts.length - 1].text;
         c.font = `13px ${SANS}`;
         const tw = Math.min(c.measureText(t).width, W - 40);
         this.box(W / 2 - tw / 2 - 10, H - 50, tw + 20, 24, 8, "#1C1B26", "#2A2935");
         c.fillStyle = "#FFFFFF"; c.fillText(t, W / 2 - tw / 2, H - 45, tw);
       }
-      if (this.modalText !== null) {
+      if (b.modalText !== null) {
         c.fillStyle = "rgba(0,0,0,.7)"; c.fillRect(0, 0, W, H);
         c.font = `13px ${SANS}`;
-        const lines = this.wrap(this.modalText, W - 66), ph = lines.length * 18 + 46;
+        const lines = this.wrap(b.modalText, W - 66), ph = lines.length * 18 + 46;
         const py = (H - ph) / 2;
         this.box(20, py, W - 40, ph, 6, "#111116", "#9945FF");
         c.fillStyle = "#FFFFFF"; lines.forEach((l, i) => c.fillText(l, 32, py + 12 + i * 18));
@@ -674,7 +738,7 @@ function __ev(...) return pcall(dispatch, ...) end
       return out;
     }
 
-    drawObj(o) {
+    drawObj(b, o) {
       const c = this.ctx;
       if (o.kind === "rect") {
         this.box(o.x, o.y, o.w, o.h, Math.min(o.radius || 0, o.w / 2, o.h / 2), css(o.color), o.border >= 0 ? css(o.border) : null);
@@ -695,7 +759,7 @@ function __ev(...) return pcall(dispatch, ...) end
           c.fillText(l, x, o.y + i * lh);
         });
       } else if (o.kind === "image" || o.kind === "canvas") {
-        const p = this.pixes.get(o.pix); if (!p) return;
+        const p = b.pixes.get(o.pix); if (!p) return;
         const s = o.scale;
         for (let j = 0; j < p.h; j++) for (let i = 0; i < p.w; i++) {
           const v = p.data[j * p.w + i];
@@ -716,35 +780,50 @@ function __ev(...) return pcall(dispatch, ...) end
           if (sub) c.fillText(sub, o.x + 12, y + 21);
           if (right) { c.textAlign = "right"; c.fillText(right, o.x + o.w - 10, y + 12); c.textAlign = "left"; }
         }
+        if (o.n > vis) {
+          const track = vis * ROW, len = Math.max(10, track * vis / o.n);
+          c.fillStyle = "#2A2935"; c.fillRect(o.x + o.w - 4, o.y + (track - len) * top / (o.n - vis), 3, len);
+        }
       }
     }
   }
 
+  let mine, theirs, friends;
   function start() {
+    const shown = theirs && theirs.badge ? theirs.badge.id : null;
     document.getElementById("stage").textContent = "";
-    world.badges = [
-      new Badge("7K2Q9M", "@you", "Your badge", "@you"),
-      new Badge("4BCD77", "@abcd_friend", "A friend's badge", "@abcd_friend"),
-    ];
+    world.queue = [];
+    const me = new Badge("7K2Q9M", "@you", false);
+    friends = FRIENDS.map(([id, owner]) => new Badge(id, owner, true));
+    world.badges = [me, ...friends];
+    mine = new Device("Your badge", false);
+    theirs = new Device("A friend's badge", true);
+    mine.show(me);
+    theirs.show(friends.find((f) => f.id === shown) || friends[0]);
+    theirs.pickers(friends);
+  }
+  function redraw() {
+    mine.draw(); theirs.draw(); theirs.pickers(friends);
   }
 
   document.getElementById("walk").addEventListener("click", () => {
     const n = world.passers.length + 1;
     const id = "P" + String(10000 + ((n * 7919) % 89999)).slice(0, 5);
     world.passers.push([id, "@passerby" + n]);
-    logEl.textContent = "@passerby" + n + " is nearby. Creatures forage every few seconds while the game is open.";
+    logEl.textContent = "@passerby" + n + " walks past. Watch the lights: creatures forage every three seconds.";
   });
-  document.getElementById("skip2").addEventListener("click", () => world.skip(120000));
-  document.getElementById("skip4").addEventListener("click", () => world.skip(4 * 3600 * 1000 + 60000));
+  document.getElementById("skip2").addEventListener("click", () => { world.skip(120000); redraw(); });
+  document.getElementById("skip4").addEventListener("click", () => { world.jump(4 * 3600 * 1000 + 60000); redraw(); });
   document.getElementById("reset").addEventListener("click", () => {
     world.badges.forEach((b) => keep.del(b.key));
-    world.passers = []; world.queue = [];
-    logEl.textContent = "Both badges are back to an egg.";
+    world.passers = [];
+    logEl.textContent = "Your badge is back to an egg, and your friends have fresh creatures.";
     start();
   });
+  document.getElementById("auto").addEventListener("change", (e) => { world.auto = e.target.checked; });
   document.getElementById("member").addEventListener("change", (e) => {
     world.member = e.target.checked;
-    logEl.textContent = world.member ? "The friend is an ABCD member again." : "The friend is now an ordinary player.";
+    logEl.textContent = world.member ? "Three friends are ABCD members again." : "Nobody is an ABCD member now.";
     start();
   });
   document.addEventListener("keydown", (e) => {
@@ -752,10 +831,12 @@ function __ev(...) return pcall(dispatch, ...) end
     const k = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "select", Escape: "back" }[e.key];
     if (!k || (e.target instanceof HTMLButtonElement && k === "select")) return;
     e.preventDefault();
-    world.badges[0].press(k);
+    mine.badge.press(k);
+    mine.draw();
   });
 
   world.member = document.getElementById("member").checked;
+  world.auto = document.getElementById("auto").checked;
   start();
   let last = performance.now();
   setInterval(() => {
@@ -764,7 +845,7 @@ function __ev(...) return pcall(dispatch, ...) end
     last = now;
     for (; behind >= 50; behind -= 50) world.step(50);
     last -= behind;
-    world.badges.forEach((b) => b.draw());
+    redraw();
   }, 50);
 })();
 </script>

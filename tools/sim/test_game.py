@@ -152,8 +152,12 @@ def foraging(w):
     others = [w.badge("X%05d" % i, "@p%d" % i) for i in range(9)]   # badges without the app
     for o in others:
         w.set_near(a, o, -40 - others.index(o))
-    w.advance(40_000)
+    flashes = set()
+    for _ in range(80):
+        w.advance(500)
+        flashes.update(c for c in a.leds if c)
     s = state(a)
+    assert flashes & {0xEB54BC, 0xACFF9B, 0xE8F180, 0x80ECFF}, flashes     # the LEDs blink at a find
     assert len(s["bk"]) == 6, s["bk"]              # full, and no more
     assert len(s["fo"]) == 36, s["fo"]             # one snack a badge
     assert "SNACKS 6/6" in [o.get("text") for o in a.objs.values()]
