@@ -1,0 +1,7 @@
+# ABCD members: one per line, the member's badge id (6 characters, shown on
+# their badge and at the top of this app's help screen), then the number of
+# the item they hand out (1 crown, 2 halo, 3 flower, 4 bow, 5 party hat,
+# 6 star), then anything you like as a note. These three are placeholders.
+AAAAAA1 placeholder member one
+BBBBBB2 placeholder member two
+CCCCCC3 placeholder member three

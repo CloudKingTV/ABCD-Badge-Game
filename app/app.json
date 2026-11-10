@@ -1,0 +1,11 @@
+{
+  "id": "kinlings",
+  "name": "Kinlings",
+  "version": "0.1.0",
+  "author": "ABCD",
+  "summary": "Raise a creature that only eats what other people give it.",
+  "icon": "heart",
+  "accent": "14F195",
+  "category": "social",
+  "permissions": ["led", "mesh"]
+}

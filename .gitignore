@@ -1,0 +1,4 @@
+# the test rig's build (tools/sim/build.sh)
+tools/sim/badgesim
+tools/sim/build/
+__pycache__/
